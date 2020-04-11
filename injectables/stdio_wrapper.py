@@ -2,29 +2,24 @@ class Replaced:
     def __init__(self, path, mode):
         self.path = path
         self.mode = mode
-        self.f = open(self.path, self.mode, 1)
-        #self.f = None
-    def get_f(self):
-        #if self.f is None:
-        #    #self.f = open(self.path, self.mode, 1)
-        return self.f
+        self._f = open(self.path, self.mode, 1)
     def fileno(self):
-        return self.get_f().fileno()
+        return self._f.fileno()
     def flush(self):
-        return self.get_f().flush()
+        return self._f.flush()
 
 class ReplacedStdin(Replaced):
     def __init__(self, path):
         Replaced.__init__(self, path, "r")
     def read(self, n):
-        return self.get_f().read(n)
+        return self._f.read(n)
     def readline(self):
-        return self.get_f().readline()
+        return self._f.readline()
 
 class ReplacedOut(Replaced):
     def __init__(self, path):
         Replaced.__init__(self, path, "w")
     def write(self, s):
-        res = self.get_f().write(s)
-        self.f.flush()
+        res = self._f.write(s)
+        self._f.flush()
         return res

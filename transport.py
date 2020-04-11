@@ -14,10 +14,8 @@ class UnidirectionalPipeTransport(object):
         os.chmod(self.path, 0o666)
         self.__file = None
 
-    def get_file(self, mode):
-        if self.__file is None:
-            self.__file = open(self.path, mode)
-        return self.__file
+    def open_file(self, mode):
+        self.__file = open(self.path, mode)
 
     def _pipe_in_thread(self, args):
         self.thread = threading.Thread(target=pipe_function, args=args)
@@ -31,10 +29,10 @@ class UnidirectionalPipeTransport(object):
         self._pipe_in_thread(args=(self.__file, f, buffering))
 
     def write(self, data):
-        return self.get_file('w').write(data)
+        return self.__file.write(data)
 
     def readline(self):
-        return self.get_file('r').readline()
+        return self.__file.readline()
 
     def flush(self):
         return self.__file.flush()
@@ -56,8 +54,8 @@ class BidirectionalPipeTransport(object):
         return json.loads(self.out_transport.readline())
 
     def open_files(self):
-        self.in_transport.get_file('w')
-        self.out_transport.get_file('r')
+        self.in_transport.open_file('w')
+        self.out_transport.open_file('r')
 
     def delete_files(self):
         self.in_transport.delete_file()
