@@ -1,4 +1,9 @@
-import sys, threading, json, functools
+import sys, json, functools
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 
 def debugger_thread_func():
     sys.stdin = LocalProxy(sys.stdin, ReplacedStdin("%s"))
@@ -18,6 +23,12 @@ def debugger_thread_func():
             namespace = {"respond": respond}
             exec(control_command, namespace)
 
-debugger_thread = threading.Thread(target=debugger_thread_func)
-debugger_thread.daemon = True
-debugger_thread.start()
+start_new_thread = thread.start_new_thread
+
+if "gevent.monkey" in sys.modules:
+    for thread_module in ["thread", "_thread"]:
+        if sys.modules["gevent.monkey"].is_object_patched(thread_module, "start_new_thread"):
+            start_new_thread = sys.modules["gevent.monkey"].get_original(thread_module, "start_new_thread")
+            break
+
+start_new_thread(debugger_thread_func, ())
