@@ -1,18 +1,18 @@
 import os
 import importlib
 
-plugins = {}
+modules = {}
 
 for f in os.listdir(os.path.dirname(__file__)):
     if f.startswith('__') or f.endswith('.pyc'):
         continue
     if f.endswith('.py'):
         f = f[:-3]
-    plugins[f] = importlib.import_module('.' + f, 'plugins')
+    modules[f] = importlib.import_module('.' + f, 'modules')
 
 def init_args(subparsers):
-    for plugin_name in plugins:
+    for plugin_name in modules:
         plugin_args_parser = subparsers.add_parser(plugin_name)
-        plugin = plugins[plugin_name]
+        plugin = modules[plugin_name]
         if hasattr(plugin, 'init_args'):
             plugin.init_args(plugin_args_parser)

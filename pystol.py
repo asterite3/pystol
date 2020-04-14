@@ -1,7 +1,7 @@
 import shlex
 
 from attach import attach_to_python_process
-import plugins
+import modules
 import args
 
 def main():
@@ -10,7 +10,7 @@ def main():
     control_transport, stdio_transport = attach_to_python_process(target_pid)
 
     if not interactive:
-        plugins.plugins[arguments.plugin].run(
+        modules.modules[arguments.module].run(
             control_transport,
             stdio_transport,
             arguments
@@ -31,7 +31,7 @@ def main():
             command_args = parser.parse_args(shlex.split(command))
         except args.ArgumentParseError:
             continue
-        plugins.plugins[command_args.plugin].run(
+        modules.modules[command_args.module].run(
             control_transport,
             stdio_transport,
             command_args

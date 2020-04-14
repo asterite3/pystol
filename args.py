@@ -2,7 +2,7 @@ import sys
 import argparse
 import string
 
-import plugins
+import modules
 
 class ArgumentParseError(Exception):
     pass
@@ -18,9 +18,9 @@ isnumber = lambda s: all(c in string.digits for c in s)
 
 def parse_args():
     parser = ArgumentParser()
-    subparsers = parser.add_subparsers(dest='plugin')
+    subparsers = parser.add_subparsers(dest='module')
 
-    plugins.init_args(subparsers)
+    modules.init_args(subparsers)
 
     target_pid = None
     arguments = None
