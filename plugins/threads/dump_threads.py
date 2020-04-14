@@ -14,6 +14,7 @@ def dump_greenlets(dump_stacks, response):
 
     greenlets = []
     response['greenlets'] = []
+
     for ob in gc.get_objects():
         if not isinstance(ob, greenlet):
             continue
@@ -25,8 +26,16 @@ def dump_greenlets(dump_stacks, response):
             'name': str(g)
         }
         if dump_stacks:
-            greenlet_info['stack'] = traceback.format_stack(g.gr_frame, 500)
+            frame = g.gr_frame
+            if frame is not None:
+                greenlet_info['stack'] = traceback.format_stack(frame, 500)
+            elif saved_greenlet_stack is not None and g is saved_greenlet_stack['greenlet']:
+                greenlet_info['stack'] = saved_greenlet_stack['stack']
+            else:
+                greenlet_info['stack'] = ['NOT AVAILABLE\n']
         response['greenlets'].append(greenlet_info)
+    del ob
+    del g
 
 def dump_threads(dump_stacks):
     threads = threading.enumerate()
@@ -49,7 +58,7 @@ def dump_threads(dump_stacks):
             if thread.ident in thread_stacks:
                 thread_info['stack'] = traceback.format_stack(thread_stacks[thread.ident])
             else:
-                thread_info['stack'] = ['NOT AVAILABLE']
+                thread_info['stack'] = ['NOT AVAILABLE\n']
         response['threads'].append(thread_info)
 
     if 'greenlet' in sys.modules:

@@ -5,7 +5,7 @@ try:
 except ImportError:
     import _thread as thread
 
-def debugger_thread_func():
+def debugger_thread_func(saved_greenlet_stack):
     sys.stdin = LocalProxy(sys.stdin, ReplacedStdin("%s"))
     out = "%s"
     sys.stdout = LocalProxy(sys.stdout, ReplacedOut(out))
@@ -20,7 +20,7 @@ def debugger_thread_func():
             if control_command == "ping":
                 respond("pong")
                 continue
-            namespace = {"respond": respond}
+            namespace = {"respond": respond, "saved_greenlet_stack": saved_greenlet_stack}
             exec(control_command, namespace)
 
 start_new_thread = thread.start_new_thread
@@ -31,4 +31,13 @@ if "gevent.monkey" in sys.modules:
             start_new_thread = sys.modules["gevent.monkey"].get_original(thread_module, "start_new_thread")
             break
 
-start_new_thread(debugger_thread_func, ())
+saved_greenlet_stack = None
+
+if "greenlet" in sys.modules:
+    import traceback
+    saved_greenlet_stack = {
+        "greenlet": sys.modules["greenlet"].getcurrent(),
+        "stack": traceback.format_stack()[:-1]
+    }
+
+start_new_thread(debugger_thread_func, (saved_greenlet_stack,))
