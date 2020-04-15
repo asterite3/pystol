@@ -29,8 +29,11 @@ def dump_greenlets(dump_stacks, response):
             else:
                 greenlet_info['stack'] = ['NOT AVAILABLE\n']
         response['greenlets'].append(greenlet_info)
-    del ob
-    del g
+    try:
+        del ob
+        del g
+    except NameError:
+        pass
 
 def dump_threads(dump_stacks):
     threads = threading.enumerate()
