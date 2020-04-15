@@ -10,7 +10,10 @@ def debugger_thread_func(saved_greenlet_stack):
         def respond(data):
             control_out.write(json.dumps(data) + chr(0x0a))
         while True:
-            l = int(control_in.readline())
+            l_str = control_in.readline().strip()
+            if l_str == "":
+                break
+            l = int(l_str)
             control_command = control_in.read(l)
             if control_command == "ping":
                 respond("pong")
