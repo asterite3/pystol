@@ -1,8 +1,3 @@
-try:
-    from thread import get_ident
-except ImportError:
-    from _thread import get_ident
-
 class LocalProxy:
     def __init__(self, wrapped, replacement):
         self.__wrapped = wrapped

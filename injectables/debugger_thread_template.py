@@ -1,10 +1,5 @@
 import sys, json, functools
 
-try:
-    import thread
-except ImportError:
-    import _thread as thread
-
 def debugger_thread_func(saved_greenlet_stack):
     sys.stdin = LocalProxy(sys.stdin, ReplacedStdin("%s"))
     out = "%s"
@@ -20,16 +15,12 @@ def debugger_thread_func(saved_greenlet_stack):
             if control_command == "ping":
                 respond("pong")
                 continue
-            namespace = {"respond": respond, "saved_greenlet_stack": saved_greenlet_stack}
+            namespace = {
+                "respond": respond,
+                "saved_greenlet_stack": saved_greenlet_stack,
+                "get_ident": get_ident
+            }
             exec(control_command, namespace)
-
-start_new_thread = thread.start_new_thread
-
-if "gevent.monkey" in sys.modules:
-    for thread_module in ["thread", "_thread"]:
-        if sys.modules["gevent.monkey"].is_object_patched(thread_module, "start_new_thread"):
-            start_new_thread = sys.modules["gevent.monkey"].get_original(thread_module, "start_new_thread")
-            break
 
 saved_greenlet_stack = None
 

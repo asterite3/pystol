@@ -10,6 +10,9 @@ def attach_to_python_process(pid):
 
     code_parts = []
 
+    with open('injectables/real_thread_methods.py') as real_thread_methods_file:
+        code_parts.append(real_thread_methods_file.read())
+
     with open('injectables/local_proxy.py') as local_proxy_file:
         code_parts.append(local_proxy_file.read())
 

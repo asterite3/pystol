@@ -4,11 +4,6 @@ import threading
 import gc
 import traceback
 
-try:
-    from thread import get_ident
-except ImportError:
-    from _thread import get_ident
-
 def dump_greenlets(dump_stacks, response):
     from greenlet import greenlet
 
