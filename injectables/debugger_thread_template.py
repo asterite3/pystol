@@ -18,24 +18,30 @@ def debugger_thread_func(saved_greenlet_stack):
     sys.stdout = LocalProxy(sys.stdout, ReplacedOut(out))
     sys.stderr = LocalProxy(sys.stderr, ReplacedOut(out))
 
-    with open("%s") as control_in, open("%s", "w", 1) as control_out:
-        def respond(data):
-            control_out.write(json.dumps(data) + chr(0x0a))
-        while True:
-            l_str = control_in.readline().strip()
-            if l_str == "":
-                break
-            l = int(l_str)
-            control_command = control_in.read(l)
-            if control_command == "ping":
-                respond("pong")
-                continue
-            namespace = {
-                "respond": respond,
-                "saved_greenlet_stack": saved_greenlet_stack,
-                "get_ident": get_ident
-            }
-            exec(control_command, namespace)
+    try:
+        with open("%s") as control_in, open("%s", "w", 1) as control_out:
+            def respond(data):
+                control_out.write(json.dumps(data) + chr(0x0a))
+            while True:
+                l_str = control_in.readline().strip()
+                if l_str == "":
+                    break
+                l = int(l_str)
+                control_command = control_in.read(l)
+                if control_command == "ping":
+                    respond("pong")
+                    continue
+                namespace = {
+                    "respond": respond,
+                    "saved_greenlet_stack": saved_greenlet_stack,
+                    "get_ident": get_ident
+                }
+                exec(control_command, namespace)
+    finally:
+        sys.stderr = sys.stderr.get_original()
+        sys.stdout = sys.stdout.get_original()
+        sys.stdin = sys.stdin.get_original()
+
 
 saved_greenlet_stack = None
 
