@@ -11,3 +11,6 @@ class LocalProxy:
 
     def __getattr__(self, name):
         return getattr(self._get_current_object(), name)
+
+    def get_original(self):
+        return self.__wrapped

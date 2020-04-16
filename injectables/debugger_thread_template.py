@@ -1,6 +1,18 @@
 import sys, json, functools
 
 def debugger_thread_func(saved_greenlet_stack):
+    ident = get_ident()
+    for builtin_module_name in ["__builtin__", "builtins"]:
+        if "gevent.monkey" in sys.modules and sys.modules["gevent.monkey"].is_object_patched(builtin_module_name, "__import__"):
+            real_import = sys.modules["gevent.monkey"].get_original(builtin_module_name, "__import__")
+            patched_import = __import__
+            def import_wrapper(*args, **kwargs):
+                if get_ident() == ident:
+                    return real_import(*args, **kwargs)
+                return patched_import(*args, **kwargs)
+            sys.modules[builtin_module_name].__import__ = import_wrapper
+            break
+
     sys.stdin = LocalProxy(sys.stdin, ReplacedStdin("%s"))
     out = "%s"
     sys.stdout = LocalProxy(sys.stdout, ReplacedOut(out))
