@@ -36,27 +36,24 @@ def dump_greenlets(dump_stacks, response):
         pass
 
 def dump_threads(dump_stacks):
-    threads = threading.enumerate()
+    threads = sys._current_frames()
 
     response = {
         'threads': []
     }
 
-    if dump_stacks:
-        thread_stacks = sys._current_frames()
-
     debugger_thread_ident = get_ident()
-    for thread in threads:
+    for ident, stack in threads.items():
+        name = ''
+        if ident in threading._active:
+            name = threading._active[ident].name
         thread_info = {
-            'ident': thread.ident,
-            'name': thread.getName(),
-            'is_debugger': thread.ident == debugger_thread_ident
+            'ident': ident,
+            'name': name,
+            'is_debugger': ident == debugger_thread_ident
         }
         if dump_stacks:
-            if thread.ident in thread_stacks:
-                thread_info['stack'] = traceback.format_stack(thread_stacks[thread.ident])
-            else:
-                thread_info['stack'] = ['NOT AVAILABLE\n']
+            thread_info['stack'] = traceback.format_stack(stack)
         response['threads'].append(thread_info)
 
     if 'greenlet' in sys.modules:
