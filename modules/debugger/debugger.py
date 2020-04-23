@@ -1,6 +1,7 @@
 import ctypes
 import thread
 import time
+import sys
 
 Py_tracefunc = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.py_object, ctypes.py_object, ctypes.c_int, ctypes.py_object)
 
@@ -45,17 +46,16 @@ class PyThreadState(ctypes.Structure):
                 ('thread_id',           ctypes.c_long)
                 ]
 
-def tracer0(_, __, ___):
-    return tracer0
+def noop_tracer(_, __, ___):
+    return noop_tracer
 
 def tracer(frame, event, arg):
     print(get_ident(), 'trace', frame, event, arg)#, arg)
     return tracer
 
 
-def traceall():
-    import sys
-    sys.settrace(tracer0)
+def trace_all_threads(trace_function):
+    sys.settrace(noop_tracer)
     ident = thread.get_ident()
 
     ctypes.pythonapi.PyInterpreterState_Head.restype = ctypes.c_void_p
@@ -67,14 +67,11 @@ def traceall():
     ctypes.pythonapi.PyThreadState_Next.argtypes = [ctypes.c_void_p]
 
     empty_obj = ctypes.py_object()
-    arg = tracer
 
     while t is not None:
         t_p = ctypes.cast(t,ctypes.POINTER(PyThreadState))
         if t_p[0].thread_id == ident:
             trace_trampoline = t_p[0].c_tracefunc
-            #print(trace_trampoline)
-            #print(t_p[0].c_traceobj)
             break
         t = ctypes.pythonapi.PyThreadState_Next(t)
 
@@ -83,18 +80,13 @@ def traceall():
     while t is not None:
         t_p = ctypes.cast(t,ctypes.POINTER(PyThreadState))
         t_frame = t_p[0].frame
-        #print('set trace for thread', t_p)
-        #print('thread frame is', t_frame)
         if t_p[0].thread_id != ident:
-            g_t = t_p
-            g_f = t_frame
             try:
                 temp = t_p[0].c_traceobj
             except ValueError:
                 temp = None
-            if arg != empty_obj: #Py_XINCREF
-                #ctypes.pythonapi._Total
-                refcount = ctypes.c_long.from_address(id(arg))
+            if trace_function != empty_obj: #Py_XINCREF
+                refcount = ctypes.c_long.from_address(id(trace_function))
                 refcount.value += 1
 
             #t_p[0].c_tracefunc = ctypes.cast(None, Py_tracefunc)
@@ -103,20 +95,18 @@ def traceall():
             if temp is not None: #Py_XDECREF
                 refcount = ctypes.c_long.from_address(id(temp))
                 refcount.value -= 1 #don't need to dealloc since we have a ref in here and it'll always be >0
-            t_p[0].c_tracefunc = trace_trampoline#func
-            #print('set', arg)
-            t_p[0].c_traceobj  = arg
+            t_p[0].c_tracefunc = trace_trampoline
+            t_p[0].c_traceobj  = trace_function
 
             while t_frame:
-                print('set trace for frame', t_frame, t_frame[0])
-                #t_frame = ctypes.cast(t_frame,ctypes.c_void_p)#ctypes.POINTER(PyFrameObject))
-                #t_frame = None#t_frame[0].f_back
-                #continue
-                t_frame[0].f_trace = arg
+                t_frame[0].f_trace = trace_function
                 t_frame = t_frame[0].f_back
-            #t = ctypes.pythonapi.PyThreadState_Next(t);continue
+
             t_p[0].use_tracing = 1#int((func is not None) or (t_p[0].c_profilefunc is not None))
         t = ctypes.pythonapi.PyThreadState_Next(t)
 
+def test_tracer(frame, event, arg):
+    print('trace', frame, event, arg)
+
 def run_debugger():
-    traceall()
+    trace_all_threads(test_tracer)
