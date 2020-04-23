@@ -1,4 +1,4 @@
-class LocalProxy:
+class LocalProxy(object):
     def __init__(self, wrapped, replacement):
         self.__wrapped = wrapped
         self.__replacement = replacement
