@@ -54,11 +54,6 @@ class PyThreadState(ctypes.Structure):
 def noop_tracer(_, __, ___):
     return noop_tracer
 
-def tracer(frame, event, arg):
-    print(get_ident(), 'trace', frame, event, arg)#, arg)
-    return tracer
-
-
 def trace_all_threads(trace_function):
     sys.settrace(noop_tracer)
     ident = thread.get_ident()
