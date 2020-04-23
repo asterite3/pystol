@@ -1,33 +1,39 @@
+import os
 import sys
 
 from pydevd_attach_to_process.add_code_to_python_process import run_python_code as run_python_code_in_process
 
 from transport import BidirectionalPipeTransport
 
+INJECTABLES = (
+    'real_thread_methods.py',
+    'local_proxy.py',
+    'stdio_wrapper.py'
+)
+
+pad = lambda s: '\n'.join('    ' + l for l in s.splitlines())
+
 def attach_to_python_process(pid):
     stdio_transport = BidirectionalPipeTransport()
     control_transport = BidirectionalPipeTransport()
 
-    code_parts = []
+    code_parts = ['def __pystol_init_code():']
 
-    with open('injectables/real_thread_methods.py') as real_thread_methods_file:
-        code_parts.append(real_thread_methods_file.read())
-
-    with open('injectables/local_proxy.py') as local_proxy_file:
-        code_parts.append(local_proxy_file.read())
-
-    with open('injectables/stdio_wrapper.py') as stdio_wrapper_file:
-        code_parts.append(stdio_wrapper_file.read())
+    for injectable in INJECTABLES:
+        with open(os.path.join('injectables', injectable)) as injectable_file:
+            code_parts.append(pad(injectable_file.read()))
 
     with open('injectables/debugger_thread_template.py') as template_file:
         template = template_file.read()
         
-        code_parts.append(template % (
+        code_parts.append(pad(template % (
             stdio_transport.in_transport.path,
             stdio_transport.out_transport.path,
             control_transport.in_transport.path,
             control_transport.out_transport.path
-        ))
+        )))
+
+    code_parts.append('__pystol_init_code();del __pystol_init_code')
 
     code = '\n'.join(code_parts).replace('\n', '\\n').replace('"', '\\"')
 
