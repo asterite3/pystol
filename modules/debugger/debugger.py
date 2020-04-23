@@ -1,7 +1,12 @@
 import ctypes
 import thread
+import threading
 import time
 import sys
+import functools
+import shlex
+import traceback
+import inspect
 
 Py_tracefunc = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.py_object, ctypes.py_object, ctypes.c_int, ctypes.py_object)
 
@@ -105,8 +110,130 @@ def trace_all_threads(trace_function):
             t_p[0].use_tracing = 1#int((func is not None) or (t_p[0].c_profilefunc is not None))
         t = ctypes.pythonapi.PyThreadState_Next(t)
 
-def test_tracer(frame, event, arg):
-    print('trace', frame, event, arg)
+debugger_state = 'run'
+thread_stops = {}
+current_thread = None
+step_notify = threading.Condition()
+
+def is_debugger_stdio_code(code):
+    In = type(sys.stdin)
+    Out = type(sys.stdout)
+
+    for T in (In, Out):
+        for prop_name in dir(T):
+            if prop_name.startswith('__') and prop_name != '__getattr__':
+                continue
+            prop = getattr(T, prop_name)
+            if hasattr(prop, 'im_func'):
+                 if code is prop.im_func.func_code:
+                    return True
+    return False
+
+def debugger_tracer(frame, event, arg):
+    global debugger_state
+
+    if debugger_state == 'run':
+        return debugger_tracer
+
+    if is_debugger_stdio_code(frame.f_code):
+        return debugger_tracer
+
+    thread_id = get_ident()
+    cv = thread_stops[thread_id]
+
+    if debugger_state == 'stepping' and current_thread == thread_id:
+        with step_notify:
+            step_notify.notify()
+        debugger_state = 'stop'
+
+    while debugger_state != 'run':
+        while debugger_state == 'stop' or (debugger_state == 'step' and current_thread != thread_id):
+            with cv:
+                cv.wait()
+        if debugger_state == 'step' and current_thread == thread_id:
+            debugger_state = 'stepping'
+            break
+
+    return debugger_tracer
+
+def is_debugger_frame(frame):
+    f = frame
+
+    while f:
+        if f.f_code is debugger_tracer.func_code:
+            return True
+        f = f.f_back
+
+    return is_debugger_stdio_code(frame.f_code)
+
+def execute_cmd(cmd, args, debugger_tid):
+    global current_thread
+    global debugger_state
+
+    if cmd == 'threads':
+        for tid in thread_stops.keys():
+            mark = '   '
+            if tid == current_thread:
+                mark = ' * '
+            print('%s%d' % (mark, tid))
+    elif cmd == 'thr' or cmd == 'thread':
+        tid = int(args[0])
+        if tid not in thread_stops:
+            print("Unknown thread id")
+            return
+        current_thread = tid
+    elif cmd == 'stop':
+        debugger_state = 'stop'
+    elif cmd == 'c' or cmd == 'cont' or cmd == 'continue':
+        debugger_state = 'run'
+        for stop in thread_stops.values():
+            with stop:
+                stop.notify()
+    elif cmd == 'step':
+        if debugger_state != 'stop':
+            print('stepping does not make sence until program is stopped')
+            return
+        debugger_state = 'step'
+        cv = thread_stops[current_thread]
+        with cv:
+            cv.notify()
+        while True:
+            with step_notify:
+                step_notify.wait()
+                if debugger_state != 'stepping':
+                    break
+    elif cmd == 'bt' or cmd == 'backtrace':
+        frame = sys._current_frames()[current_thread]
+        while is_debugger_frame(frame) and frame.f_back:
+            frame = frame.f_back
+        traceback.print_stack(frame)
+
 
 def run_debugger():
-    trace_all_threads(test_tracer)
+    global current_thread
+
+    current_thread_id = get_ident()
+
+    print('debugger_thread', current_thread_id)
+
+    thread_ids = sys._current_frames().keys()
+
+    for tid in thread_ids:
+        if tid != current_thread_id:
+            thread_stops[tid] = threading.Condition()
+
+    current_thread = next(iter(thread_stops.keys()))
+
+    trace_all_threads(debugger_tracer)
+
+    while True:
+        cmd_line = raw_input('debugger> ')
+        cmd_parts = shlex.split(cmd_line)
+        if len(cmd_parts) == 0:
+            continue
+        cmd = cmd_parts[0]
+        args = cmd_parts[1:]
+        try:
+            execute_cmd(cmd, args, current_thread_id)
+        except:
+            traceback.print_exc()
