@@ -1,5 +1,9 @@
 import ctypes
-import thread
+import platform
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 import threading
 import time
 import sys
@@ -27,7 +31,7 @@ PyFrameObject._fields_ = [
                 ('f_trace',              ctypes.py_object),               # PyObject *f_trace;
     ]
 
-class PyThreadState(ctypes.Structure):
+class Py2ThreadState(ctypes.Structure):
     _fields_ = [("next",                ctypes.POINTER(ctypes.c_int)),
                 ("interp",              ctypes.POINTER(ctypes.c_int)),
                 ('frame',               ctypes.POINTER(PyFrameObject)),
@@ -51,10 +55,41 @@ class PyThreadState(ctypes.Structure):
                 ('thread_id',           ctypes.c_long)
                 ]
 
+class Py34ThreadState(ctypes.Structure):
+    _fields_ = [("prev",                ctypes.POINTER(ctypes.c_int)),
+                ("next",                ctypes.POINTER(ctypes.c_int)),
+                ('interp',              ctypes.c_void_p),
+                ('frame',               ctypes.POINTER(PyFrameObject)),
+                ('recursion_depth',     ctypes.c_int),
+                ('overflowed',          ctypes.c_char),
+                ('recursion_critical',  ctypes.c_char),
+                ('tracing',             ctypes.c_int),
+                ('use_tracing',         ctypes.c_int),
+                ('c_profilefunc',       Py_tracefunc),
+                ('c_tracefunc',         Py_tracefunc),
+                ('c_profileobj',        ctypes.py_object),
+                ('c_traceobj',          ctypes.py_object),
+                ('curexc_type',         ctypes.py_object),
+                ('curexc_value',        ctypes.py_object),
+                ('curexc_traceback',    ctypes.py_object),
+                ('exc_type',            ctypes.py_object),
+                ('exc_value',           ctypes.py_object),
+                ('exc_traceback',       ctypes.py_object),
+                ('dict',                ctypes.py_object),
+                ('gilstate_counter',    ctypes.c_int),
+                ('async_exc',           ctypes.py_object),
+                ('thread_id',           ctypes.c_long)
+                ]
+
 def noop_tracer(_, __, ___):
     return noop_tracer
 
 def trace_all_threads(trace_function):
+    PyThreadState = Py2ThreadState
+
+    if list(map(int, platform.python_version_tuple())) >= [3, 4]:
+        PyThreadState = Py34ThreadState
+
     sys.settrace(noop_tracer)
     ident = thread.get_ident()
 
@@ -70,6 +105,7 @@ def trace_all_threads(trace_function):
 
     while t is not None:
         t_p = ctypes.cast(t,ctypes.POINTER(PyThreadState))
+        print(t_p[0].thread_id)
         if t_p[0].thread_id == ident:
             trace_trampoline = t_p[0].c_tracefunc
             break
@@ -120,7 +156,7 @@ def is_debugger_stdio_code(code):
                 continue
             prop = getattr(T, prop_name)
             if hasattr(prop, 'im_func'):
-                 if code is prop.im_func.func_code:
+                 if code is func_code(prop.im_func):
                     return True
     return False
 
@@ -155,11 +191,16 @@ def is_debugger_frame(frame):
     f = frame
 
     while f:
-        if f.f_code is debugger_tracer.func_code:
+        if f.f_code is func_code(debugger_tracer):
             return True
         f = f.f_back
 
     return is_debugger_stdio_code(frame.f_code)
+
+def func_code(func):
+    if hasattr(func, '__code__'):
+        return func.__code__
+    return func.func_code
 
 def execute_cmd(cmd, args, debugger_tid):
     global current_thread
@@ -206,6 +247,7 @@ def execute_cmd(cmd, args, debugger_tid):
 
 def run_debugger():
     global current_thread
+    global raw_input
 
     current_thread_id = get_ident()
 
@@ -221,6 +263,10 @@ def run_debugger():
 
     trace_all_threads(debugger_tracer)
 
+    try:
+        raw_input
+    except NameError:
+        raw_input = input
     while True:
         cmd_line = raw_input('debugger> ')
         cmd_parts = shlex.split(cmd_line)
