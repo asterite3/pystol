@@ -1,6 +1,6 @@
 import sys, json, functools
 
-def debugger_thread_func(saved_greenlet_stack):
+def debugger_thread_func():
     ident = get_ident()
     for builtin_module_name in ["__builtin__", "builtins"]:
         if "gevent.monkey" in sys.modules and sys.modules["gevent.monkey"].is_object_patched(builtin_module_name, "__import__"):
@@ -33,7 +33,7 @@ def debugger_thread_func(saved_greenlet_stack):
                     continue
                 namespace = {
                     "respond": respond,
-                    "saved_greenlet_stack": saved_greenlet_stack,
+                    "state": state,
                     "get_ident": get_ident
                 }
                 exec(control_command, namespace)
@@ -43,13 +43,13 @@ def debugger_thread_func(saved_greenlet_stack):
         sys.stdin = sys.stdin.get_original()
 
 
-saved_greenlet_stack = None
+state.saved_greenlet_stack = None
 
 if "greenlet" in sys.modules:
     import traceback
-    saved_greenlet_stack = {
+    state.saved_greenlet_stack = {
         "greenlet": sys.modules["greenlet"].getcurrent(),
         "stack": traceback.format_stack()[:-1]
     }
 
-start_new_thread(debugger_thread_func, (saved_greenlet_stack,))
+start_new_thread(debugger_thread_func, ())

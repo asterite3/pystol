@@ -22,6 +22,7 @@ def dump_greenlets(dump_stacks, response):
         }
         if dump_stacks:
             frame = g.gr_frame
+            saved_greenlet_stack = state.saved_greenlet_stack
             if frame is not None:
                 greenlet_info['stack'] = traceback.format_stack(frame, 500)
             elif saved_greenlet_stack is not None and g is saved_greenlet_stack['greenlet']:

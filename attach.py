@@ -8,7 +8,8 @@ from transport import BidirectionalPipeTransport
 INJECTABLES = (
     'real_thread_methods.py',
     'local_proxy.py',
-    'stdio_wrapper.py'
+    'stdio_wrapper.py',
+    'state.py'
 )
 
 pad = lambda s: '\n'.join('    ' + l for l in s.splitlines())
