@@ -44,6 +44,7 @@ In addition to `threads` and `console`, interactive mode has the following comma
 * `locals`/`globals`/`closure` print corresponding set of variables in selected frame
 * `x` (also `p`, `print`, `examine`) print value of variable in selected frame
 
-### Features
+## Features
 
 Pystol supports attaching to both python2 and python3, getting interative python shell, dumping stack traces of threads and greenlets and examining variable values. There is some code for stopping the process and stepping, but it is rather unstable.
+Only CPython is supported.
