@@ -13,6 +13,9 @@ with open(os.path.join(os.path.dirname(__file__), 'debugger.py')) as code_file:
 with open(os.path.join(os.path.dirname(__file__), 'current_frame.py')) as code_file:
     current_frame_code = code_file.read()
 
+with open(os.path.join(os.path.dirname(__file__), 'get_closure.py')) as code_file:
+    get_closure_code = code_file.read()
+
 def set_thread(control_transport, stdio_transport, arguments):
     thread_id = arguments.thread_id
     control_transport.send('''
@@ -63,13 +66,14 @@ def get_locals(control_transport, stdio_transport, arguments):
     control_transport.send(current_frame_code + '''
 import traceback
 try:
-    respond(list(get_current_frame().f_locals.keys()))
+    respond({k: repr(v) for k, v in get_current_frame().f_locals.items()})
 except:
     respond(traceback.format_exc())
 ''')
     resp = control_transport.recv()
-    if isinstance(resp, list):
-        pprint.pprint(resp)
+    if isinstance(resp, dict):
+        for k, v in resp.items():
+            print('%s = %s' % (k, v))
     else:
         print('error: ' + resp)
 
@@ -77,18 +81,57 @@ def get_globals(control_transport, stdio_transport, arguments):
     control_transport.send(current_frame_code + '''
 import traceback
 try:
-    respond(list(get_current_frame().f_globals.keys()))
+    respond({k: repr(v) for k, v in get_current_frame().f_globals.items()})
 except:
     respond(traceback.format_exc())
 ''')
     resp = control_transport.recv()
-    if isinstance(resp, list):
-        pprint.pprint(resp)
+    if isinstance(resp, dict):
+        for k, v in resp.items():
+            print('%s = %s' % (k, v))
+    else:
+        print('error: ' + resp)
+
+def get_closure_vars(control_transport, stdio_transport, arguments):
+    control_transport.send(current_frame_code + '\n' + get_closure_code + '''
+import traceback
+try:
+    respond({k: repr(v) for k, v in get_closure(get_current_frame()).items()})
+except:
+    respond(traceback.format_exc())
+''')
+    resp = control_transport.recv()
+    if isinstance(resp, dict):
+        for k, v in resp.items():
+            print('%s = %s' % (k, v))
     else:
         print('error: ' + resp)
 
 def examine(control_transport, stdio_transport, arguments):
-    pass
+    name = arguments.var_name
+    control_transport.send(current_frame_code + '\n' + get_closure_code + '''
+import traceback
+try:
+    name = %s
+    frame = get_current_frame()
+    if name in frame.f_locals:
+        respond(repr(frame.f_locals[name]))
+    elif name in frame.f_globals:
+        respond(repr(frame.f_globals[name]))
+    else:
+        closure = get_closure(frame)
+        if name in closure:
+            respond(repr(closure[name]))
+        else:
+            respond({"status": "fail", "error": "variable not found"})
+except:
+    respond({"status": "fail", "error": traceback.format_exc()})
+''' % (repr(name)))
+    resp = control_transport.recv()
+    if isinstance(resp, dict):
+        print('error: ' + resp['error'])
+    else:
+        print(resp)
 
 def run(control_transport, stdio_transport, arguments):
     control_transport.send(code + '\nrun_debugger()')
@@ -114,6 +157,10 @@ def init_args_raw(subparsers, commands):
     commands['globals'] = get_globals
     set_interactive(globals_parser)
 
+    closure_parser = subparsers.add_parser('closure')
+    commands['closure'] = get_closure_vars
+    set_interactive(closure_parser)
+
     for alias in ('backtrace', 'bt'):
         backtrace_parser = subparsers.add_parser(alias)
         commands[alias] = backtrace
@@ -121,6 +168,7 @@ def init_args_raw(subparsers, commands):
 
     for alias in ('x', 'examine', 'print', 'p'):
         examine_parser = subparsers.add_parser(alias)
+        examine_parser.add_argument('var_name')
         commands[alias] = examine
         set_interactive(examine_parser)
 
