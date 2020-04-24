@@ -1,6 +1,8 @@
 import os
 import sys
 
+from args.interactive_argument_parser import set_interactive
+
 with open(os.path.join(os.path.dirname(__file__), 'sync.py')) as code_file:
     code = code_file.read() + '\n'
 
@@ -36,7 +38,6 @@ def init_args_raw(subparsers, commands):
     set_thread_parser = subparsers.add_parser('thread')
     commands['thread'] = set_thread
     set_thread_parser.add_argument('thread_id', type=int)
-    set_thread_parser.pystol_no_exit = True
-    set_thread_parser.prog = 'pystol>'
+    set_interactive(set_thread_parser)
 
     commands['debugger'] = run

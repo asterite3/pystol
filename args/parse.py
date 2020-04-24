@@ -1,18 +1,9 @@
 import sys
-import argparse
 import string
 
 import modules
 
-class ArgumentParseError(Exception):
-    pass
-
-class ArgumentParser(argparse.ArgumentParser):
-    def error(self, message):
-        if hasattr(self, 'pystol_no_exit'):
-            self.print_usage(sys.stderr)
-            raise ArgumentParseError
-        super(ArgumentParser, self).error(message)
+from .interactive_argument_parser import ArgumentParser, set_interactive
 
 isnumber = lambda s: all(c in string.digits for c in s)
 
@@ -46,9 +37,7 @@ def parse_args():
             target_pid = arguments.pid
 
     if interactive:
-        parser._handle_conflict_resolve(None, [('--help',parser._actions[0])])
-        parser._handle_conflict_resolve(None, [('-h',parser._actions[0])])
+        set_interactive(parser)
         parser.prog = 'pystol>'
-        parser.pystol_no_exit = True
 
     return target_pid, interactive, arguments, parser

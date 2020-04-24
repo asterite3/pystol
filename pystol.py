@@ -2,12 +2,13 @@ import shlex
 
 from attach import attach_to_python_process
 import modules
-import args
+from args.parse import parse_args
+from args.interactive_argument_parser import ArgumentParseError
 
 def main():
     global raw_input
 
-    target_pid, interactive, arguments, parser = args.parse_args()
+    target_pid, interactive, arguments, parser = parse_args()
 
     control_transport, stdio_transport = attach_to_python_process(target_pid)
 
@@ -31,7 +32,7 @@ def main():
             continue
         try:
             command_args = parser.parse_args(shlex.split(command))
-        except args.ArgumentParseError:
+        except ArgumentParseError:
             continue
         modules.commands[command_args.module](
             control_transport,
