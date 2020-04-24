@@ -4,8 +4,8 @@ import pprint
 
 from args.interactive_argument_parser import set_interactive
 
-with open(os.path.join(os.path.dirname(__file__), 'sync.py')) as code_file:
-    code = code_file.read() + '\n'
+#with open(os.path.join(os.path.dirname(__file__), 'sync.py')) as code_file:
+#    code = code_file.read() + '\n'
 
 with open(os.path.join(os.path.dirname(__file__), 'debugger.py')) as code_file:
     code += code_file.read()
@@ -200,4 +200,4 @@ def init_args_raw(subparsers, commands, interactive):
     commands['down'] = down
     set_interactive(down_parser)
 
-    commands['debugger'] = run
+    #commands['debugger'] = run
