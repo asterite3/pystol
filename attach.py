@@ -11,7 +11,8 @@ INJECTABLES = (
     'real_thread_methods.py',
     'local_proxy.py',
     'stdio_wrapper.py',
-    'state.py'
+    'state.py',
+    'debugger_thread.py'
 )
 
 def _attach_to_python_process_with_transport(pid, stdio_transport, control_transport):
@@ -20,11 +21,6 @@ def _attach_to_python_process_with_transport(pid, stdio_transport, control_trans
     for injectable in INJECTABLES:
         with open(os.path.join('injectables', injectable)) as injectable_file:
             code_parts.append(leftpad(injectable_file.read()))
-
-    with open('injectables/debugger_thread_template.py') as template_file:
-        template = template_file.read()
-        
-        code_parts.append(leftpad(template))
 
     code_parts.append('__pystol_init_code();del __pystol_init_code')
 
