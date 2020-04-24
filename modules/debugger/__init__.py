@@ -45,6 +45,17 @@ else:
     if resp == 'no greenlet module':
         print("Greenlets not available")
 
+def backtrace(control_transport, stdio_transport, arguments):
+    with open(os.path.join(os.path.dirname(__file__), 'backtrace.py')) as bt_file:
+        control_transport.send(bt_file.read())
+    resp = control_transport.recv()
+
+    if isinstance(resp, list):
+        print(''.join(resp))
+    else:
+        print('error: ' + resp)
+
+
 def run(control_transport, stdio_transport, arguments):
     control_transport.send(code + '\nrun_debugger()')
     stdio_transport.in_transport.pipe_from(sys.stdin, 1)
@@ -60,5 +71,13 @@ def init_args_raw(subparsers, commands):
     commands['greenlet'] = set_greenlet
     set_greenlet_parser.add_argument('greenlet_id', type=int)
     set_interactive(set_greenlet_parser)
+
+    backtrace_parser = subparsers.add_parser('backtrace')
+    commands['backtrace'] = backtrace
+    set_interactive(backtrace_parser)
+
+    backtrace_parser = subparsers.add_parser('bt')
+    commands['bt'] = backtrace
+    set_interactive(backtrace_parser)
 
     commands['debugger'] = run
