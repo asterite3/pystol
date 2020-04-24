@@ -36,6 +36,6 @@ def run(control_transport, _, arguments):
             marker = '   '
             if g['current']:
                 marker = ' * '
-            print(marker + g['name'])
+            print(marker + str(g['id']) + ' ' + g['name'])
             if arguments.stacks:
                 print(leftpad(''.join(g['stack']), 3))

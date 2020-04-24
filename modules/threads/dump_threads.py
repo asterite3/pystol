@@ -23,6 +23,7 @@ def dump_greenlets(dump_stacks, response):
         )
         greenlet_info = {
             'name': str(g),
+            'id': id(g),
             'current': current
         }
         if dump_stacks:
