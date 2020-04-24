@@ -17,8 +17,13 @@ def dump_greenlets(dump_stacks, response):
             continue
         greenlets.append(ob)
     for g in greenlets:
+        current = (
+            getattr(state, 'current_thread_type', '') == 'greenlet' and
+            getattr(state, 'current_thread', None) == id(g)
+        )
         greenlet_info = {
-            'name': str(g)
+            'name': str(g),
+            'current': current
         }
         if dump_stacks:
             frame = g.gr_frame
@@ -43,15 +48,20 @@ def dump_threads(dump_stacks):
         'threads': []
     }
 
-    debugger_thread_ident = get_ident()
     for ident, stack in threads.items():
         name = ''
         if ident in threading._active:
             name = threading._active[ident].name
+        current = (
+            getattr(state, 'current_thread_type', '') == 'thread' and
+            getattr(state, 'current_thread', None) == ident
+        )
+
         thread_info = {
             'ident': ident,
             'name': name,
-            'is_debugger': ident == debugger_thread_ident
+            'is_debugger': ident == debugger_thread_ident,
+            'current': current
         }
         if dump_stacks:
             thread_info['stack'] = traceback.format_stack(stack)

@@ -34,7 +34,9 @@ def debugger_thread_func():
                 namespace = {
                     "respond": respond,
                     "state": state,
-                    "get_ident": get_ident
+                    "get_ident": get_ident,
+                    "allocate_lock": allocate_lock,
+                    "debugger_thread_ident": ident
                 }
                 exec(control_command, namespace)
     finally:
@@ -42,7 +44,8 @@ def debugger_thread_func():
         sys.stdout = sys.stdout.get_original()
         sys.stdin = sys.stdin.get_original()
 
-
+state.current_thread_type = "thread"
+state.current_thread = get_ident()
 state.saved_greenlet_stack = None
 
 if "greenlet" in sys.modules:

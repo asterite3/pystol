@@ -4,6 +4,7 @@ import sys
 from pydevd_attach_to_process.add_code_to_python_process import run_python_code as run_python_code_in_process
 
 from transport import BidirectionalPipeTransport
+from leftpad import leftpad
 
 INJECTABLES = (
     'real_thread_methods.py',
@@ -11,8 +12,6 @@ INJECTABLES = (
     'stdio_wrapper.py',
     'state.py'
 )
-
-pad = lambda s: '\n'.join('    ' + l for l in s.splitlines())
 
 def attach_to_python_process(pid):
     stdio_transport = BidirectionalPipeTransport()
@@ -22,12 +21,12 @@ def attach_to_python_process(pid):
 
     for injectable in INJECTABLES:
         with open(os.path.join('injectables', injectable)) as injectable_file:
-            code_parts.append(pad(injectable_file.read()))
+            code_parts.append(leftpad(injectable_file.read()))
 
     with open('injectables/debugger_thread_template.py') as template_file:
         template = template_file.read()
         
-        code_parts.append(pad(template % (
+        code_parts.append(leftpad(template % (
             stdio_transport.in_transport.path,
             stdio_transport.out_transport.path,
             control_transport.in_transport.path,

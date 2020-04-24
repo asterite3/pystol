@@ -1,5 +1,7 @@
 import os
 
+from leftpad import leftpad
+
 with open(os.path.join(os.path.dirname(__file__), 'dump_threads.py')) as code_file:
     code = code_file.read()
 
@@ -20,14 +22,20 @@ def run(control_transport, _, arguments):
         tag = ''
         if thread['is_debugger']:
             tag = ' [DEBUGGER THREAD]'
-        print('%d %s%s' % (thread['ident'], thread['name'], tag))
+        marker = '   '
+        if thread['current']:
+            marker = ' * '
+        print('%s%d %s%s' % (marker, thread['ident'], thread['name'], tag))
         if arguments.stacks:
-            print(''.join(thread['stack']))
+            print(leftpad(''.join(thread['stack']), 3))
 
     if 'greenlets' in response:
         greenlets = response['greenlets']
         print("\n%d greenlets:" % len(greenlets))
         for g in greenlets:
-            print(g['name'])
+            marker = '   '
+            if g['current']:
+                marker = ' * '
+            print(marker + g['name'])
             if arguments.stacks:
-                print(''.join(g['stack']))
+                print(leftpad(''.join(g['stack']), 3))
