@@ -13,13 +13,13 @@ def debugger_thread_func():
             sys.modules[builtin_module_name].__import__ = import_wrapper
             break
 
-    sys.stdin = LocalProxy(sys.stdin, ReplacedStdin("%s"))
-    out = "%s"
+    sys.stdin = LocalProxy(sys.stdin, ReplacedStdin(pystol_stdin))
+    out = pystol_stdout
     sys.stdout = LocalProxy(sys.stdout, ReplacedOut(out))
     sys.stderr = LocalProxy(sys.stderr, ReplacedOut(out))
 
     try:
-        with open("%s") as control_in, open("%s", "w", 1) as control_out:
+        with open(pystol_control_in) as control_in, open(pystol_control_out, "w", 1) as control_out:
             def respond(data):
                 control_out.write(json.dumps(data) + chr(0x0a))
             while True:
