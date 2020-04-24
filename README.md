@@ -34,7 +34,16 @@ Dump stacks of all threads (and greenlets, if any):
 python pystol.py PID threads --stacks
 ```
 
-### Commands in interactive mode
+## What is it for
+
+Pystol is most useful when you have a python process on a server which is stuck and not responding or is otherwise misbehaving (say, eating up more and more memory) and you don't understand what's happening inside it and you **can't afford to restart it and add a debug print** - because the bug simply won't reproduce (or will reproduce only after a lot of time). In such case it may be desired to attach to that process right from server's command line and debug it.
+
+If you can afford using and IDE (python process is running on your laptop or you are confortable with forwarding ports to the server for remote debugging), probably a better option would be to use [
+PyDev.Debugger](https://github.com/fabioz/PyDev.Debugger) with PyCharm/VSCode/PyDev or some similar one.
+
+If you need to **profile** a live process, [py-spy](https://github.com/benfred/py-spy) will be a better option.
+
+## Commands in interactive mode
 
 In addition to `threads` and `console`, interactive mode has the following commands:
 
