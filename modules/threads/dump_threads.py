@@ -4,7 +4,7 @@ import threading
 import gc
 import traceback
 
-def dump_greenlets(dump_stacks, response):
+def dump_greenlets(dump_stacks, response, non_debugger_thread):
     from greenlet import greenlet
 
     greenlets = []
@@ -28,13 +28,12 @@ def dump_greenlets(dump_stacks, response):
         }
         if dump_stacks:
             frame = g.gr_frame
-            saved_greenlet_stack = state.saved_greenlet_stack
             if frame is not None:
                 greenlet_info['stack'] = traceback.format_stack(frame, 500)
-            elif saved_greenlet_stack is not None and g is saved_greenlet_stack['greenlet']:
-                greenlet_info['stack'] = saved_greenlet_stack['stack']
+            elif g:
+                greenlet_info['stack'] = traceback.format_stack(sys._current_frames()[non_debugger_thread], 500)
             else:
-                greenlet_info['stack'] = ['NOT AVAILABLE\n']
+                greenlet_info['stack'] = ['GREENLET IS DEAD\n']
         response['greenlets'].append(greenlet_info)
     try:
         del ob
@@ -49,6 +48,8 @@ def dump_threads(dump_stacks):
         'threads': []
     }
 
+    non_debugger_thread = None
+
     for ident, stack in threads.items():
         name = ''
         if ident in threading._active:
@@ -58,10 +59,13 @@ def dump_threads(dump_stacks):
             getattr(state, 'current_thread', None) == ident
         )
 
+        is_debugger = ident == debugger_thread_ident
+        non_debugger_thread = ident
+
         thread_info = {
             'ident': ident,
             'name': name,
-            'is_debugger': ident == debugger_thread_ident,
+            'is_debugger': is_debugger,
             'current': current
         }
         if dump_stacks:
@@ -69,5 +73,5 @@ def dump_threads(dump_stacks):
         response['threads'].append(thread_info)
 
     if 'greenlet' in sys.modules:
-        dump_greenlets(dump_stacks, response)
+        dump_greenlets(dump_stacks, response, non_debugger_thread)
     return response

@@ -46,13 +46,5 @@ def debugger_thread_func():
 
 state.current_thread_type = "thread"
 state.current_thread = get_ident()
-state.saved_greenlet_stack = None
-
-if "greenlet" in sys.modules:
-    import traceback
-    state.saved_greenlet_stack = {
-        "greenlet": sys.modules["greenlet"].getcurrent(),
-        "stack": traceback.format_stack()[:-1]
-    }
 
 start_new_thread(debugger_thread_func, ())
