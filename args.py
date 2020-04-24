@@ -20,8 +20,6 @@ def parse_args():
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(dest='module')
 
-    modules.init_args(subparsers)
-
     target_pid = None
     arguments = None
 
@@ -35,12 +33,17 @@ def parse_args():
         target_pid = int(args[1])
         args = args[2:]
     if len(args) > 0 or target_pid is None:
-        if target_pid is None:
-            parser.add_argument('-p', '--pid', type=int, required=True)
+        interactive = False
+
+    if target_pid is None:
+        parser.add_argument('-p', '--pid', type=int, required=True)
+
+    modules.init_args(subparsers, interactive)
+
+    if not interactive:
         arguments = parser.parse_args(args)
         if target_pid is None:
             target_pid = arguments.pid
-        interactive = False
 
     if interactive:
         parser._handle_conflict_resolve(None, [('--help',parser._actions[0])])

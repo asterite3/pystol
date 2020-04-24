@@ -10,7 +10,7 @@ def main():
     control_transport, stdio_transport = attach_to_python_process(target_pid)
 
     if not interactive:
-        modules.modules[arguments.module].run(
+        modules.commands[arguments.module](
             control_transport,
             stdio_transport,
             arguments
@@ -31,7 +31,7 @@ def main():
             command_args = parser.parse_args(shlex.split(command))
         except args.ArgumentParseError:
             continue
-        modules.modules[command_args.module].run(
+        modules.commands[command_args.module](
             control_transport,
             stdio_transport,
             command_args
