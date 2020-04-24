@@ -154,7 +154,9 @@ def run(control_transport, stdio_transport, arguments):
     stdio_transport.in_transport.pipe_from(sys.stdin, 1)
     stdio_transport.in_transport.thread.join()
 
-def init_args_raw(subparsers, commands):
+def init_args_raw(subparsers, commands, interactive):
+    if not interactive:
+        return
     set_thread_parser = subparsers.add_parser('thread')
     commands['thread'] = set_thread
     set_thread_parser.add_argument('thread_id', type=int)
