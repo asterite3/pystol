@@ -25,7 +25,6 @@ def _attach_to_python_process_with_transport(pid, stdio_transport, control_trans
     code_parts.append('__pystol_init_code();del __pystol_init_code')
 
     with tempfile.NamedTemporaryFile(prefix='pystolinit', suffix='.py') as init_code_file:
-        print(init_code_file.name)
         code = '\n'.join(code_parts)
 
         if str is not bytes:
