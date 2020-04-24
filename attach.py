@@ -2,7 +2,12 @@ import os
 import sys
 import tempfile
 
-from pydevd_attach_to_process.add_code_to_python_process import run_python_code as run_python_code_in_process
+try:
+    from pydevd_attach_to_process.add_code_to_python_process import run_python_code as run_python_code_in_process
+except ImportError:
+    for p in sys.path[:]:
+        sys.path.append(os.path.join(p, 'pydevd_attach_to_process'))
+    from add_code_to_python_process import run_python_code as run_python_code_in_process
 
 from transport import BidirectionalPipeTransport
 from leftpad import leftpad
