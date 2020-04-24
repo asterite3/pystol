@@ -1,5 +1,6 @@
 import os
 import sys
+import pprint
 
 from args.interactive_argument_parser import set_interactive
 
@@ -58,6 +59,22 @@ def backtrace(control_transport, stdio_transport, arguments):
     else:
         print('error: ' + resp)
 
+def get_locals(control_transport, stdio_transport, arguments):
+    control_transport.send(current_frame_code + '''
+import traceback
+try:
+    respond(list(get_current_frame().f_locals.keys()))
+except:
+    respond(traceback.format_exc())
+''')
+    resp = control_transport.recv()
+    if isinstance(resp, list):
+        pprint.pprint(resp)
+    else:
+        print('error: ' + resp)
+
+def examine(control_transport, stdio_transport, arguments):
+    pass
 
 def run(control_transport, stdio_transport, arguments):
     control_transport.send(code + '\nrun_debugger()')
@@ -75,12 +92,18 @@ def init_args_raw(subparsers, commands):
     set_greenlet_parser.add_argument('greenlet_id', type=int)
     set_interactive(set_greenlet_parser)
 
-    backtrace_parser = subparsers.add_parser('backtrace')
-    commands['backtrace'] = backtrace
-    set_interactive(backtrace_parser)
+    locals_parser = subparsers.add_parser('locals')
+    commands['locals'] = get_locals
+    set_interactive(locals_parser)
 
-    backtrace_parser = subparsers.add_parser('bt')
-    commands['bt'] = backtrace
-    set_interactive(backtrace_parser)
+    for alias in ('backtrace', 'bt'):
+        backtrace_parser = subparsers.add_parser(alias)
+        commands[alias] = backtrace
+        set_interactive(backtrace_parser)
+
+    for alias in ('x', 'examine', 'print', 'p'):
+        examine_parser = subparsers.add_parser(alias)
+        commands[alias] = examine
+        set_interactive(examine_parser)
 
     commands['debugger'] = run
