@@ -36,6 +36,7 @@ def _attach_to_python_process_with_transport(pid, stdio_transport, control_trans
             code = bytes(code, 'utf8')
 
         init_code_file.write(code)
+        init_code_file.flush()
 
         run_python_code_in_process(pid, ('''
             exec(open("%s").read(), {
