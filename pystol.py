@@ -5,6 +5,8 @@ import modules
 import args
 
 def main():
+    global raw_input
+
     target_pid, interactive, arguments, parser = args.parse_args()
 
     control_transport, stdio_transport = attach_to_python_process(target_pid)
