@@ -15,4 +15,7 @@ def get_closure(frame):
     else:
         closure = func.func_closure
 
+    if closure is None:
+        return {}
+
     return dict(zip(code.co_freevars, (c.cell_contents for c in closure)))
