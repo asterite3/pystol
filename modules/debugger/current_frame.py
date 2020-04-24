@@ -1,11 +1,25 @@
 import gc, sys
 
+def apply_frame_offset(frame):
+    offset = getattr(state, 'frame_offset', 0)
+    if offset == 0:
+        return frame
+    stack = []
+    f = frame
+    while f:
+        stack.append(f)
+        f = f.f_back
+    if offset >= len(stack):
+        offset = len(stack) - 1
+        state.frame_offset = offset
+    return stack[offset]
+
 def get_thread_frame():
     for ident, frame in sys._current_frames().items():
         if ident != debugger_thread_ident:
             return frame
 
-def get_current_frame():
+def _get_current_frame_internal():
     if state.current_thread_type == 'thread':
         return sys._current_frames()[state.current_thread]
     elif state.current_thread_type == 'greenlet':
@@ -22,3 +36,6 @@ def get_current_frame():
                 break
         raise Exception("no such greenlet")
     raise Exception("bad current thread type " + state.current_thread_type)
+
+def get_current_frame():
+    return apply_frame_offset(_get_current_frame_internal())

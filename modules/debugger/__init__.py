@@ -27,6 +27,7 @@ elif %d not in sys._current_frames():
 else:
     state.current_thread = %d
     state.current_thread_type = "thread"
+    state.frame_offset = 0
     respond("ok")
 ''' % (thread_id, thread_id, thread_id))
     resp = control_transport.recv()
@@ -45,6 +46,7 @@ if 'greenlet' not in sys.modules:
 else:
     state.current_thread = %d
     state.current_thread_type = "greenlet"
+    state.frame_offset = 0
     respond("ok")
 ''' % greenlet_id)
     resp = control_transport.recv()
@@ -133,6 +135,20 @@ except:
     else:
         print(resp)
 
+def up(control_transport, _, arguments):
+    count = arguments.count
+    control_transport.send(
+        'state.frame_offset = max(0, getattr(state, "frame_offset", 0) + %d); respond("ok")' % count
+    )
+    assert control_transport.recv() == "ok"
+
+def down(control_transport, _, arguments):
+    count = arguments.count
+    control_transport.send(
+        'state.frame_offset = max(0, getattr(state, "frame_offset", 0) - %d); respond("ok")' % count
+    )
+    assert control_transport.recv() == "ok"
+
 def run(control_transport, stdio_transport, arguments):
     control_transport.send(code + '\nrun_debugger()')
     stdio_transport.in_transport.pipe_from(sys.stdin, 1)
@@ -171,5 +187,15 @@ def init_args_raw(subparsers, commands):
         examine_parser.add_argument('var_name')
         commands[alias] = examine
         set_interactive(examine_parser)
+
+    up_parser = subparsers.add_parser('up')
+    up_parser.add_argument('-c', '--count', type=int, default=1, required=False)
+    commands['up'] = up
+    set_interactive(up_parser)
+
+    down_parser = subparsers.add_parser('down')
+    down_parser.add_argument('-c', '--count', type=int, default=1, required=False)
+    commands['down'] = down
+    set_interactive(down_parser)
 
     commands['debugger'] = run
