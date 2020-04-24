@@ -9,6 +9,9 @@ with open(os.path.join(os.path.dirname(__file__), 'sync.py')) as code_file:
 with open(os.path.join(os.path.dirname(__file__), 'debugger.py')) as code_file:
     code += code_file.read()
 
+with open(os.path.join(os.path.dirname(__file__), 'current_frame.py')) as code_file:
+    current_frame_code = code_file.read()
+
 def set_thread(control_transport, stdio_transport, arguments):
     thread_id = arguments.thread_id
     control_transport.send('''
@@ -47,7 +50,7 @@ else:
 
 def backtrace(control_transport, stdio_transport, arguments):
     with open(os.path.join(os.path.dirname(__file__), 'backtrace.py')) as bt_file:
-        control_transport.send(bt_file.read())
+        control_transport.send(current_frame_code + '\n' + bt_file.read())
     resp = control_transport.recv()
 
     if isinstance(resp, list):
