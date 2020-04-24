@@ -73,6 +73,20 @@ except:
     else:
         print('error: ' + resp)
 
+def get_globals(control_transport, stdio_transport, arguments):
+    control_transport.send(current_frame_code + '''
+import traceback
+try:
+    respond(list(get_current_frame().f_globals.keys()))
+except:
+    respond(traceback.format_exc())
+''')
+    resp = control_transport.recv()
+    if isinstance(resp, list):
+        pprint.pprint(resp)
+    else:
+        print('error: ' + resp)
+
 def examine(control_transport, stdio_transport, arguments):
     pass
 
@@ -95,6 +109,10 @@ def init_args_raw(subparsers, commands):
     locals_parser = subparsers.add_parser('locals')
     commands['locals'] = get_locals
     set_interactive(locals_parser)
+
+    globals_parser = subparsers.add_parser('globals')
+    commands['globals'] = get_globals
+    set_interactive(globals_parser)
 
     for alias in ('backtrace', 'bt'):
         backtrace_parser = subparsers.add_parser(alias)
