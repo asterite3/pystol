@@ -5,10 +5,10 @@ import pprint
 from args.interactive_argument_parser import set_interactive
 
 #with open(os.path.join(os.path.dirname(__file__), 'sync.py')) as code_file:
-#    code = code_file.read() + '\n'
+#    code += code_file.read() + '\n'
 
-with open(os.path.join(os.path.dirname(__file__), 'debugger.py')) as code_file:
-    code += code_file.read()
+#with open(os.path.join(os.path.dirname(__file__), 'debugger.py')) as code_file:
+#    code += code_file.read()
 
 with open(os.path.join(os.path.dirname(__file__), 'current_frame.py')) as code_file:
     current_frame_code = code_file.read()
