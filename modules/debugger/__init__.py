@@ -29,6 +29,22 @@ else:
     if resp == 'debugger thread':
         print("This is a debugger thread")
 
+def set_greenlet(control_transport, stdio_transport, arguments):
+    greenlet_id = arguments.greenlet_id
+    control_transport.send('''
+import sys
+if 'greenlet' not in sys.modules:
+    respond("no greenlet module")
+else:
+    state.current_thread = %d
+    state.current_thread_type = "greenlet"
+    respond("ok")
+''' % greenlet_id)
+    resp = control_transport.recv()
+    assert resp in ('ok', 'no greenlet module')
+    if resp == 'no greenlet module':
+        print("Greenlets not available")
+
 def run(control_transport, stdio_transport, arguments):
     control_transport.send(code + '\nrun_debugger()')
     stdio_transport.in_transport.pipe_from(sys.stdin, 1)
@@ -39,5 +55,10 @@ def init_args_raw(subparsers, commands):
     commands['thread'] = set_thread
     set_thread_parser.add_argument('thread_id', type=int)
     set_interactive(set_thread_parser)
+
+    set_greenlet_parser = subparsers.add_parser('greenlet')
+    commands['greenlet'] = set_greenlet
+    set_greenlet_parser.add_argument('greenlet_id', type=int)
+    set_interactive(set_greenlet_parser)
 
     commands['debugger'] = run
