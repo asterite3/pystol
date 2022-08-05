@@ -38,6 +38,8 @@ def _attach_to_python_process_with_transport(pid, stdio_transport, control_trans
         init_code_file.write(code)
         init_code_file.flush()
 
+        os.chmod(init_code_file.name, 0o644)
+
         run_python_code_in_process(pid, ('''
             exec(open("%s").read(), {
             "pystol_stdin": "%s",
